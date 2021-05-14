@@ -14,55 +14,94 @@ if DATASET_ID is not None:
     DATASET_ID = int(DATASET_ID)
 
 TOTAL = 'total'
+COUNT_SUFFIX = '_cnt'
+TAG_COLOMN = 'tag'
+TAG_VALUE_COLOMN = 'tag_value'
+FIRST_COLOMN = '#'
 
 
-def process_video_annotation(ann, property_tags_counter, info_counter, ds_name, video_info):
+def process_video_annotation(ann, property_tags_counter):
     for tag in ann.tags:
         if tag.frame_range is None:
-            info_counter[tag.name][TOTAL].extend([video_info])
-            info_counter[tag.name][ds_name].extend([video_info])
             property_tags_counter[tag.name] += 1
 
 
-def process_video_annotation_tags_values(ann, property_tags_values_counter, val_info_counter, ds_name, video_info):
+def process_video_annotation_tags_values(ann, property_tags_values_counter):
     for tag in ann.tags:
         if tag.frame_range is None:
-            val_info_counter[tag.name][tag.value][TOTAL].extend([video_info])
-            val_info_counter[tag.name][tag.value][ds_name].extend([video_info])
             property_tags_values_counter[tag.name][tag.value] += 1
 
 
-def process_video_ann_frame_tags(ann, frame_range_tags_counter, frame_info_counter, ds_name, video_info, tags_counter):
+def process_video_ann_frame_tags(ann, frame_range_tags_counter, tags_counter):
     for tag in ann.tags:
         if tag.frame_range:
-            frame_info_counter[tag.name][TOTAL].extend([video_info])
-            frame_info_counter[tag.name][ds_name].extend([video_info])
             number_of_frames = tag.frame_range[1] - tag.frame_range[0] + 1
             frame_range_tags_counter[tag.name] += number_of_frames
             tags_counter[tag.name] += 1
 
 
-def process_video_ann_frame_tags_vals(ann, frame_range_tags_val_counter, val_frame_info_counter, ds_name, video_info, tags_values_counter):
+def process_video_ann_frame_tags_vals(ann, frame_range_tags_val_counter):
     for tag in ann.tags:
         if tag.frame_range:
-            val_frame_info_counter[tag.name][tag.value][TOTAL].extend([video_info])
-            val_frame_info_counter[tag.name][tag.value][ds_name].extend([video_info])
             number_of_frames = tag.frame_range[1] - tag.frame_range[0] + 1
             frame_range_tags_val_counter[tag.name][tag.value] += number_of_frames
-            tags_values_counter[tag.name][tag.value] += 1
 
 
-def process_video_ann_object_tags(ann, object_tags_counter, object_info_counter, ds_name, video_info):
+def process_video_ann_object_tags(ann, object_tags_counter):
     for curr_obj in ann.objects:
         for tag in curr_obj.tags:
             object_tags_counter[tag.name] += 1
 
 
-
-def process_video_ann_object_tags_vals(ann, object_tags_val_counter, val_object_info_counter, ds_name, video_info):
+def process_video_ann_object_tags_vals(ann, object_tags_val_counter):
     for curr_obj in ann.objects:
         for tag in curr_obj.tags:
             object_tags_val_counter[tag.name][tag.value] += 1
+
+
+def get_pd_tag_stat(meta, datasets, columns):
+    data = []
+    for idx, tag_meta in enumerate(meta.tag_metas):
+        name = tag_meta.name
+        row = [idx, name]
+        if DATASET_ID is None:
+            row.extend([0])
+        for ds_name, ds_property_tags in datasets:
+            row.extend([ds_property_tags[name]])
+            if DATASET_ID is None:
+                row[2] += ds_property_tags[name]
+        data.append(row)
+
+    df = pd.DataFrame(data, columns=columns)
+    total_row = list(df.sum(axis=0))
+    total_row[0] = len(df)
+    total_row[1] = TOTAL
+    df.loc[len(df)] = total_row
+
+    return df
+
+
+def get_pd_tag_values_stat(values_counts, columns):
+    data_values = []
+    idx = 0
+    for ds_property_tags_values in values_counts:
+        for tag_name, tag_vals in ds_property_tags_values[1].items():
+            for val, cnt in tag_vals.items():
+                row_val = [idx, tag_name, str(val)]
+                if DATASET_ID is None:
+                    row_val.extend([0])
+                    row_val.extend([cnt])
+                    row_val[3] += cnt
+                data_values.append(row_val)
+                idx += 1
+    df_values = pd.DataFrame(data_values, columns=columns)
+    total_row = list(df_values.sum(axis=0))
+    total_row[0] = len(df_values)
+    total_row[1] = TOTAL
+    total_row[2] = TOTAL
+    df_values.loc[len(df_values)] = total_row
+
+    return df_values
 
 
 @my_app.callback("video_tag_stats")
@@ -81,19 +120,19 @@ def video_tag_stats(api: sly.Api, task_id, context, state, app_logger):
         app_logger.warn("Project {!r} have no tags".format(project_info.name))
         my_app.stop()
 
-    columns = ['#', 'tag']
-    columns_for_values = ['#', 'tag', 'tag_value']
-    columns_frame_tag = ['#', 'tag'] #===========frame_tags=======
-    columns_frame_tag_values = ['#', 'tag', 'tag_value'] #===========frame_tags=======
-    columns_object_tag = ['#', 'tag'] #===========object_tags=======
-    columns_object_tag_values = ['#', 'tag', 'tag_value'] #===========object_tags=======
+    columns = [FIRST_COLOMN, TAG_COLOMN]
+    columns_for_values = [FIRST_COLOMN, TAG_COLOMN, TAG_VALUE_COLOMN]
+    columns_frame_tag = [FIRST_COLOMN, TAG_COLOMN] #===========frame_tags=======
+    columns_frame_tag_values = [FIRST_COLOMN, TAG_COLOMN, TAG_VALUE_COLOMN] #===========frame_tags=======
+    columns_object_tag = [FIRST_COLOMN, TAG_COLOMN] #===========object_tags=======
+    columns_object_tag_values = [FIRST_COLOMN, TAG_COLOMN, TAG_VALUE_COLOMN] #===========object_tags=======
     if DATASET_ID is None:
-        columns.extend(['total'])
-        columns_for_values.extend(['total'])
-        columns_frame_tag.extend(['total', 'total_cnt']) #===========frame_tags=======
-        columns_frame_tag_values.extend(['total', 'total_cnt']) #===========frame_tags=======
-        columns_object_tag.extend(['total'])  # ===========object_tags=======
-        columns_object_tag_values.extend(['total'])  # ===========object_tags=======
+        columns.extend([TOTAL])
+        columns_for_values.extend([TOTAL])
+        columns_frame_tag.extend([TOTAL, TOTAL + COUNT_SUFFIX]) #===========frame_tags=======
+        columns_frame_tag_values.extend([TOTAL]) #===========frame_tags=======
+        columns_object_tag.extend([TOTAL])  # ===========object_tags=======
+        columns_object_tag_values.extend([TOTAL])  # ===========object_tags=======
 
     datasets_counts = []
     datasets_values_counts = []
@@ -103,13 +142,6 @@ def video_tag_stats(api: sly.Api, task_id, context, state, app_logger):
     datasets_object_tag_values_counts = []  # ===========object_tags=======
 
     key_id_map = KeyIdMap()
-
-    video_info_counter = defaultdict(lambda: defaultdict(list))
-    video_info_counter_values = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    video_frames_info_counter = defaultdict(lambda: defaultdict(list))
-    video_frames_info_counter_values = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    video_object_info_counter = defaultdict(lambda: defaultdict(list))
-    video_object_info_counter_values = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     for dataset in api.dataset.get_list(PROJECT_ID):
         if DATASET_ID is not None and dataset.id != DATASET_ID:
@@ -122,11 +154,11 @@ def video_tag_stats(api: sly.Api, task_id, context, state, app_logger):
         ds_property_tags_values = defaultdict(lambda: defaultdict(int))
 
         #===========frame_tags=========================================
-        columns_frame_tag.extend([dataset.name, dataset.name + '_cnt'])
+        columns_frame_tag.extend([dataset.name, dataset.name + COUNT_SUFFIX])
         ds_frame_tags = defaultdict(int)
         ds_frame_tags_counter = defaultdict(int)
 
-        columns_frame_tag_values.extend([dataset.name, dataset.name + '_cnt'])
+        columns_frame_tag_values.extend([dataset.name])
         ds_frame_tags_values = defaultdict(lambda: defaultdict(int))
         ds_frame_tags_values_counter = defaultdict(lambda: defaultdict(int))
         # ===========frame_tags=========================================
@@ -146,14 +178,14 @@ def video_tag_stats(api: sly.Api, task_id, context, state, app_logger):
                 ann_info = api.video.annotation.download(video_info.id)
                 ann = sly.VideoAnnotation.from_json(ann_info, meta, key_id_map)
 
-                process_video_annotation(ann, ds_property_tags, video_info_counter, dataset.name, video_info)
-                process_video_annotation_tags_values(ann, ds_property_tags_values, video_info_counter_values, dataset.name, video_info)
+                process_video_annotation(ann, ds_property_tags)
+                process_video_annotation_tags_values(ann, ds_property_tags_values)
 
-                process_video_ann_frame_tags(ann, ds_frame_tags, video_frames_info_counter, dataset.name, video_info, ds_frame_tags_counter) #===========frame_tags=======
-                process_video_ann_frame_tags_vals(ann, ds_frame_tags_values, video_frames_info_counter_values, dataset.name, video_info, ds_frame_tags_values_counter) #===========frame_tags=======
+                process_video_ann_frame_tags(ann, ds_frame_tags, ds_frame_tags_counter) #===========frame_tags=======
+                process_video_ann_frame_tags_vals(ann, ds_frame_tags_values) #===========frame_tags=======
 
-                process_video_ann_object_tags(ann, ds_object_tags, video_object_info_counter, dataset.name, video_info)  # ===========object_tags=======
-                process_video_ann_object_tags_vals(ann, ds_object_tags_values, video_object_info_counter_values, dataset.name, video_info)  # ===========object_tags=======
+                process_video_ann_object_tags(ann, ds_object_tags)  # ===========object_tags=======
+                process_video_ann_object_tags_vals(ann, ds_object_tags_values)  # ===========object_tags=======
 
                 progress.iter_done_report()
 
@@ -164,45 +196,12 @@ def video_tag_stats(api: sly.Api, task_id, context, state, app_logger):
         datasets_object_tag_counts.append((dataset.name, ds_object_tags))  # ===========object_tags=======
         datasets_object_tag_values_counts.append((dataset.name, ds_object_tags_values))  # ===========object_tags=======
 
-    #=====================================================================================
-    data = []
-    for idx, tag_meta in enumerate(meta.tag_metas):
-        name = tag_meta.name
-        row = [idx, name]
-        if DATASET_ID is None:
-            row.extend([0])
-        for ds_name, ds_property_tags in datasets_counts:
-            row.extend([ds_property_tags[name]])
-            if DATASET_ID is None:
-                row[2] += ds_property_tags[name]
-        data.append(row)
-
-    df = pd.DataFrame(data, columns=columns)
-    total_row = list(df.sum(axis=0))
-    total_row[0] = len(df)
-    total_row[1] = 'Total'
-    df.loc[len(df)] = total_row
+    #=========property_tags===============================================================
+    df = get_pd_tag_stat(meta, datasets_counts, columns)
     print('Total video tags stats')
     print(df)
     #=========property_tags_values=========================================================
-    data_values = []
-    idx = 0
-    for ds_property_tags_values in datasets_values_counts:
-        for tag_name, tag_vals in ds_property_tags_values[1].items():
-            for val, cnt in tag_vals.items():
-                row_val = [idx, tag_name, str(val)]
-                if DATASET_ID is None:
-                    row_val.extend([0])
-                    row_val.extend([cnt])
-                    row_val[3] += cnt
-                data_values.append(row_val)
-                idx += 1
-    df_values = pd.DataFrame(data_values, columns=columns_for_values)
-    total_row = list(df_values.sum(axis=0))
-    total_row[0] = len(df_values)
-    total_row[1] = 'Total'
-    total_row[2] = 'Total'
-    df_values.loc[len(df_values)] = total_row
+    df_values = get_pd_tag_values_stat(datasets_values_counts, columns_for_values)
     print('Total video tags values stats')
     print(df_values)
 
@@ -223,76 +222,24 @@ def video_tag_stats(api: sly.Api, task_id, context, state, app_logger):
     df_frame_tags = pd.DataFrame(data_frame_tags, columns=columns_frame_tag)
     total_row = list(df_frame_tags.sum(axis=0))
     total_row[0] = len(df_frame_tags)
-    total_row[1] = 'Total'
+    total_row[1] = TOTAL
     df_frame_tags.loc[len(df_frame_tags)] = total_row
     print('Total frame tags stats')
     print(df_frame_tags)
 
     # =========frame_tags_values=============================================================
-    data_frame_tags_values = []
-    idx = 0
-    for ds_frame_tags_values in datasets_frame_tag_values_counts:
-        for tag_name, tag_vals in ds_frame_tags_values[1].items():
-            for val, cnt in tag_vals.items():
-                row_frame_tags_val = [idx, tag_name, str(val)]
-                if DATASET_ID is None:
-                    row_frame_tags_val.extend([0, 0])
-                    row_frame_tags_val.extend([cnt])
-                    row_frame_tags_val[3] += cnt
-                    row_frame_tags_val[4] += ds_frame_tags_values_counter[tag_name][val]
-                    row_frame_tags_val.extend([ds_frame_tags_values_counter[tag_name][val]])
-                data_frame_tags_values.append(row_frame_tags_val)
-                idx += 1
-    df_frame_tags_values = pd.DataFrame(data_frame_tags_values, columns=columns_frame_tag_values)
-    total_row = list(df_frame_tags_values.sum(axis=0))
-    total_row[0] = len(df_frame_tags_values)
-    total_row[1] = 'Total'
-    total_row[2] = 'Total'
-    df_frame_tags_values.loc[len(df_frame_tags_values)] = total_row
+    df_frame_tags_values = get_pd_tag_values_stat(datasets_frame_tag_values_counts, columns_frame_tag_values)
     print('Total frame tags values stats')
     print(df_frame_tags_values)
 
     #==========object_tag================================================================
-    data = []
-    for idx, tag_meta in enumerate(meta.tag_metas):
-        name = tag_meta.name
-        row = [idx, name]
-        if DATASET_ID is None:
-            row.extend([0])
-        for ds_name, ds_object_tags in datasets_object_tag_counts:
-            row.extend([ds_object_tags[name]])
-            if DATASET_ID is None:
-                row[2] += ds_object_tags[name]
-        data.append(row)
-
-    df = pd.DataFrame(data, columns=columns_object_tag)
-    total_row = list(df.sum(axis=0))
-    total_row[0] = len(df)
-    total_row[1] = 'Total'
-    df.loc[len(df)] = total_row
+    df_object_tags = get_pd_tag_stat(meta, datasets_object_tag_counts, columns_object_tag)
     print('Total object tags stats')
-    print(df)
+    print(df_object_tags)
     # =========object_tags_values=========================================================
-    data_values = []
-    idx = 0
-    for ds_object_tags_values in datasets_object_tag_values_counts:
-        for tag_name, tag_vals in ds_object_tags_values[1].items():
-            for val, cnt in tag_vals.items():
-                row_val = [idx, tag_name, str(val)]
-                if DATASET_ID is None:
-                    row_val.extend([0])
-                    row_val.extend([cnt])
-                    row_val[3] += cnt
-                data_values.append(row_val)
-                idx += 1
-    df_values = pd.DataFrame(data_values, columns=columns_object_tag_values)
-    total_row = list(df_values.sum(axis=0))
-    total_row[0] = len(df_values)
-    total_row[1] = 'Total'
-    total_row[2] = 'Total'
-    df_values.loc[len(df_values)] = total_row
+    df_object_values = get_pd_tag_values_stat(datasets_object_tag_values_counts, columns_object_tag_values)
     print('Total object tags values stats')
-    print(df_values)
+    print(df_object_values)
 
     my_app.stop()
 

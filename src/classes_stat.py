@@ -23,6 +23,7 @@ TOTAL = 'total'
 COUNT_SUFFIX = '_cnt'
 TAG_COLOMN = 'tag'
 TAG_VALUE_COLOMN = 'tag_value'
+FIRST_STRING = '#'
 
 stat_types_str = os.environ['modal.state.currStat']
 
@@ -169,12 +170,14 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
     if CLASSES in stat_type:
         classes = []
         counter = {}
-        for curr_class in meta.obj_classes:
+        classes_id = []
+        for idx, curr_class in enumerate(meta.obj_classes):
             classes.append(curr_class.name)
+            classes_id.append(idx)
             counter[curr_class.name] = 0
 
-        columns_classes = [CLASS_NAME, 'total_objects', 'total_figures', 'total_frames']
-        data = {CLASS_NAME: classes, 'total_objects': [0] * len(classes), 'total_figures': [0] * len(classes), 'total_frames': [0] * len(classes)}
+        columns_classes = [FIRST_STRING, CLASS_NAME, 'total_objects', 'total_figures', 'total_frames']
+        data = {FIRST_STRING: classes_id, CLASS_NAME: classes, 'total_objects': [0] * len(classes), 'total_figures': [0] * len(classes), 'total_frames': [0] * len(classes)}
 
     if TAGS in stat_type:
         columns = [TAG_COLOMN]
@@ -276,9 +279,12 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
                 (dataset.name, ds_object_tags_values))  # ===========object_tags=======
 
     if CLASSES in stat_type:
-        classes.append('Total')
+        #classes.append('Total')
+        classes.insert(0, TOTAL)
+        #data[FIRST_STRING].append(len(data[FIRST_STRING]))
+        data[FIRST_STRING].insert(0, len(data[FIRST_STRING]))
         for key, val in data.items():
-            if key == CLASS_NAME:
+            if key == CLASS_NAME or key == FIRST_STRING:
                 continue
             data[key].append(sum(val))
         df_classes = pd.DataFrame(data, columns=columns_classes, index=classes)

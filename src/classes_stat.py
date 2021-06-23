@@ -279,10 +279,10 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
                 (dataset.name, ds_object_tags_values))  # ===========object_tags=======
 
     if CLASSES in stat_type:
-        #classes.append('Total')
-        classes.insert(0, TOTAL)
-        #data[FIRST_STRING].append(len(data[FIRST_STRING]))
-        data[FIRST_STRING].insert(0, len(data[FIRST_STRING]))
+        classes.append('Total')
+        #classes.insert(0, TOTAL)
+        data[FIRST_STRING].append(len(data[FIRST_STRING]))
+        #data[FIRST_STRING].insert(0, len(data[FIRST_STRING]))
         for key, val in data.items():
             if key == CLASS_NAME or key == FIRST_STRING:
                 continue

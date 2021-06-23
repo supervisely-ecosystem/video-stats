@@ -6,7 +6,7 @@
   ],
   "description": "Get stat about video classes and tags",
   "docker_image": "supervisely/base-py-sdk:6.1.80",
-  "main_script": "src/main.py",
+  "main_script": "src/classes_stat.py",
   "modal_template": "src/modal.html",
   "modal_template_state": {"currStat": ["Classes"]},
   "gui_template": "src/gui.html",

@@ -5,14 +5,12 @@
     "Report"
   ],
   "description": "Get stat about video classes and tags",
-  "docker_image": "supervisely/base-py-sdk:6.1.80",
+  "docker_image": "supervisely/base-py-sdk:6",
   "main_script": "src/classes_stat.py",
+  "gui_template": "src/gui.html",
   "modal_template": "src/modal.html",
   "modal_template_state": {"currStat": ["Classes"]},
-  "gui_template": "src/gui.html",
   "task_location": "workspace_tasks",
-  "isolate": true,
-  "headless": true,
   "icon": "https://i.imgur.com/dQbfTnd.png",
   "icon_background": "#FFFFFF",
   "context_menu": {

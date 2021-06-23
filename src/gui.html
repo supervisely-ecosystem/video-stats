@@ -1,21 +1,4 @@
 <div>
-
-    <div class="fflex" style="align-items: stretch">
-        <sly-card title="Output" style="width: 50%;">
-            <div v-if="data.started === true && data.progress !== 100">
-                <div>Processing videos: {{data.progressCurrent}} / {{data.progressTotal}}</div>
-                <el-progress :percentage="data.progress"></el-progress>
-            </div>
-            <sly-field v-if="data.progress === 100" title=""
-                       description="Report has been successfully saved">
-                <a slot="title" target="_blank" :href="`${data.reportUrl}`">{{data.reportName}}</a>
-                <sly-icon slot="icon" :options="{ color: '#33c94c', bgColor: '#d9f7e4', rounded: false }">
-                    <i class="zmdi zmdi-receipt"></i>
-                </sly-icon>
-            </sly-field>
-        </sly-card>
-    </div>
-
     <sly-card
             class="mt15"
             title="Classes stat"

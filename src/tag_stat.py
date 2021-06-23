@@ -9,6 +9,7 @@ my_app = sly.AppService()
 TEAM_ID = int(os.environ['context.teamId'])
 WORKSPACE_ID = int(os.environ['context.workspaceId'])
 PROJECT_ID = int(os.environ['modal.state.slyProjectId'])
+TASK_ID = int(os.environ["TASK_ID"])
 DATASET_ID = os.environ.get('modal.state.slyDatasetId', None)
 if DATASET_ID is not None:
     DATASET_ID = int(DATASET_ID)
@@ -63,7 +64,7 @@ def get_pd_tag_stat(meta, datasets, columns):
     data = []
     for idx, tag_meta in enumerate(meta.tag_metas):
         name = tag_meta.name
-        row = [idx, name]
+        row = [name]
         if DATASET_ID is None:
             row.extend([0])
         for ds_name, ds_property_tags in datasets:
@@ -87,7 +88,7 @@ def get_pd_tag_values_stat(values_counts, columns):
     for ds_property_tags_values in values_counts:
         for tag_name, tag_vals in ds_property_tags_values[1].items():
             for val, cnt in tag_vals.items():
-                row_val = [idx, tag_name, str(val)]
+                row_val = [tag_name, str(val)]
                 if DATASET_ID is None:
                     row_val.extend([0])
                     row_val.extend([cnt])
@@ -120,12 +121,12 @@ def video_tag_stats(api: sly.Api, task_id, context, state, app_logger):
         app_logger.warn("Project {!r} have no tags".format(project_info.name))
         my_app.stop()
 
-    columns = [FIRST_COLOMN, TAG_COLOMN]
-    columns_for_values = [FIRST_COLOMN, TAG_COLOMN, TAG_VALUE_COLOMN]
-    columns_frame_tag = [FIRST_COLOMN, TAG_COLOMN] #===========frame_tags=======
-    columns_frame_tag_values = [FIRST_COLOMN, TAG_COLOMN, TAG_VALUE_COLOMN] #===========frame_tags=======
-    columns_object_tag = [FIRST_COLOMN, TAG_COLOMN] #===========object_tags=======
-    columns_object_tag_values = [FIRST_COLOMN, TAG_COLOMN, TAG_VALUE_COLOMN] #===========object_tags=======
+    columns = [TAG_COLOMN]
+    columns_for_values = [TAG_COLOMN, TAG_VALUE_COLOMN]
+    columns_frame_tag = [TAG_COLOMN] #===========frame_tags=======
+    columns_frame_tag_values = [TAG_COLOMN, TAG_VALUE_COLOMN] #===========frame_tags=======
+    columns_object_tag = [TAG_COLOMN] #===========object_tags=======
+    columns_object_tag_values = [TAG_COLOMN, TAG_VALUE_COLOMN] #===========object_tags=======
     if DATASET_ID is None:
         columns.extend([TOTAL])
         columns_for_values.extend([TOTAL])
@@ -209,7 +210,7 @@ def video_tag_stats(api: sly.Api, task_id, context, state, app_logger):
     data_frame_tags = []
     for idx, tag_meta in enumerate(meta.tag_metas):
         name = tag_meta.name
-        row_frame_tags = [idx, name]
+        row_frame_tags = [name]
         if DATASET_ID is None:
             row_frame_tags.extend([0, 0])
         for ds_name, ds_frame_tags in datasets_frame_tag_counts:
@@ -240,6 +241,14 @@ def video_tag_stats(api: sly.Api, task_id, context, state, app_logger):
     df_object_values = get_pd_tag_values_stat(datasets_object_tag_values_counts, columns_object_tag_values)
     print('Total object tags values stats')
     print(df_object_values)
+
+    file_remote = "/video_stat/{}_{}_{}_tags_stat.csv".format(TASK_ID, TEAM_ID, project_info.name)
+    file_local = os.path.join(my_app.data_dir, file_remote.lstrip("/"))
+    sly.fs.ensure_base_path(file_local)
+    df.to_csv(file_local, index=False, header=True)
+    file_info = api.file.upload(TEAM_ID, file_local, file_remote)
+    api.task._set_custom_output(task_id, file_info.id, sly.fs.get_file_name_with_ext(file_remote),
+                                description="CSV with reference items")
 
     my_app.stop()
 

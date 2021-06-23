@@ -338,8 +338,8 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
         {"field": "data.userImageTable", "payload": user_image_table}])
 
     api.task.set_fields(task_id, fields)
-    
-    my_app.stop()
+
+    #my_app.stop()
 
 
 def main():

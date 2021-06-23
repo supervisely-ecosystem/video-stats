@@ -328,6 +328,17 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
         print('Total object tags values stats')
         print(df_object_values)
 
+
+    user_image_table = {
+        "columns": columns_classes,
+        "data": list(data.values())
+    }
+    fields = []
+    fields.extend([
+        {"field": "data.userImageTable", "payload": user_image_table}])
+
+    api.task.set_fields(task_id, fields)
+    
     my_app.stop()
 
 
@@ -337,7 +348,12 @@ def main():
         "WORKSPACE_ID": WORKSPACE_ID,
         "PROJECT_ID": PROJECT_ID
     })
-    my_app.run(initial_events=[{"command": "video_stats"}])
+
+    data = {
+        "userImageTable": {"columns": [], "data": []}
+    }
+
+    my_app.run(data=data, initial_events=[{"command": "video_stats"}])
 
 
 if __name__ == "__main__":

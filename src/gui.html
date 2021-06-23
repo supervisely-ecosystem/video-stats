@@ -1,0 +1,13 @@
+<div>
+    <sly-card
+            class="mt15"
+            title="Classes stat"
+            subtitle="Classes stat"
+    >
+        <sly-table
+                v-loading="data.video_stats"
+                :options="{perPage: 40, pageSizes: [15, 30, 40, 100]}"
+                :content="data.userImageTable"
+        ></sly-table>
+    </sly-card>
+</div>

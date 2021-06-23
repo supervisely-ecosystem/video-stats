@@ -105,7 +105,7 @@ def get_pd_tag_stat(meta, datasets, columns):
     data = []
     for idx, tag_meta in enumerate(meta.tag_metas):
         name = tag_meta.name
-        row = [name]
+        row = [idx, name]
         row.extend([0])
         for ds_name, ds_property_tags in datasets:
             row.extend([ds_property_tags[name]])
@@ -127,7 +127,7 @@ def get_pd_tag_values_stat(values_counts, columns):
     for ds_property_tags_values in values_counts:
         for tag_name, tag_vals in ds_property_tags_values[1].items():
             for val, cnt in tag_vals.items():
-                row_val = [tag_name, str(val)]
+                row_val = [idx, tag_name, str(val)]
                 row_val.extend([0])
                 row_val.extend([cnt])
                 row_val[3] += cnt
@@ -180,12 +180,12 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
         data = {FIRST_STRING: classes_id, CLASS_NAME: classes, 'total_objects': [0] * len(classes), 'total_figures': [0] * len(classes), 'total_frames': [0] * len(classes)}
 
     if TAGS in stat_type:
-        columns = [TAG_COLOMN]
-        columns_for_values = [TAG_COLOMN, TAG_VALUE_COLOMN]
-        columns_frame_tag = [TAG_COLOMN]  # ===========frame_tags=======
-        columns_frame_tag_values = [TAG_COLOMN, TAG_VALUE_COLOMN]  # ===========frame_tags=======
-        columns_object_tag = [TAG_COLOMN]  # ===========object_tags=======
-        columns_object_tag_values = [TAG_COLOMN, TAG_VALUE_COLOMN]  # ===========object_tags=======
+        columns = [FIRST_STRING, TAG_COLOMN]
+        columns_for_values = [FIRST_STRING, TAG_COLOMN, TAG_VALUE_COLOMN]
+        columns_frame_tag = [FIRST_STRING, TAG_COLOMN]  # ===========frame_tags=======
+        columns_frame_tag_values = [FIRST_STRING, TAG_COLOMN, TAG_VALUE_COLOMN]  # ===========frame_tags=======
+        columns_object_tag = [FIRST_STRING, TAG_COLOMN]  # ===========object_tags=======
+        columns_object_tag_values = [FIRST_STRING, TAG_COLOMN, TAG_VALUE_COLOMN]  # ===========object_tags=======
 
         columns.extend([TOTAL])
         columns_for_values.extend([TOTAL])
@@ -279,10 +279,8 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
                 (dataset.name, ds_object_tags_values))  # ===========object_tags=======
 
     if CLASSES in stat_type:
-        classes.append('Total')
-        #classes.insert(0, TOTAL)
+        classes.append(TOTAL)
         data[FIRST_STRING].append(len(data[FIRST_STRING]))
-        #data[FIRST_STRING].insert(0, len(data[FIRST_STRING]))
         for key, val in data.items():
             if key == CLASS_NAME or key == FIRST_STRING:
                 continue
@@ -304,7 +302,7 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
         data_frame_tags = []
         for idx, tag_meta in enumerate(meta.tag_metas):
             name = tag_meta.name
-            row_frame_tags = [name]
+            row_frame_tags = [idx, name]
             row_frame_tags.extend([0, 0])
             for ds_name, ds_frame_tags in datasets_frame_tag_counts:
                 row_frame_tags.extend([ds_frame_tags[name], ds_frame_tags_counter[name]])

@@ -2,7 +2,7 @@ import os
 import supervisely_lib as sly
 from supervisely_lib.video_annotation.key_id_map import KeyIdMap
 import pandas as pd
-import copy
+import copy, json
 from operator import add
 from collections import defaultdict
 
@@ -333,13 +333,29 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
         "columns": columns_classes,
         "data": list(data.values())
     }
-    fields = []
-    fields.extend([
-        {"field": "data.userImageTable", "payload": user_image_table}])
+
+    report_name = "{}_{}.lnk".format(PROJECT_ID, project_info.name)
+    local_path = os.path.join(my_app.data_dir, report_name)
+    sly.fs.ensure_base_path(local_path)
+    with open(local_path, "w") as text_file:
+        print(my_app.app_url, file=text_file)
+    remote_path = "/reports/video_stat/{}".format(report_name)
+    remote_path = api.file.get_free_name(TEAM_ID, remote_path)
+    report_name = sly.fs.get_file_name_with_ext(remote_path)
+    file_info = api.file.upload(TEAM_ID, local_path, remote_path)
+    report_url = api.file.get_url(file_info.id)
+
+    fields = [
+        {"field": "data.loading", "payload": False},
+        {"field": "data.userImageTable", "payload": json.loads(df_classes.to_json(orient="split"))},
+        {"field": "data.savePath", "payload": remote_path},
+        {"field": "data.reportName", "payload": report_name},
+        {"field": "data.reportUrl", "payload": report_url},
+    ]
 
     api.task.set_fields(task_id, fields)
-
-    #my_app.stop()
+    api.task.set_output_report(task_id, file_info.id, report_name)
+    my_app.stop()
 
 
 def main():

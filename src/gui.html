@@ -7,7 +7,14 @@
         <sly-table
                 v-loading="data.video_stats"
                 :options="{perPage: 40, pageSizes: [15, 30, 40, 100]}"
-                :content="data.userImageTable"
+                :content="data.classesTable"
         ></sly-table>
+
+        <sly-table
+                v-loading="data.video_tags"
+                :options="{perPage: 40, pageSizes: [15, 30, 40, 100]}"
+                :content="data.tagsTable"
+        ></sly-table>
+
     </sly-card>
 </div>

@@ -333,11 +333,7 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
         print(df_object_values)
 
 
-    user_image_table = {
-        "columns": columns_classes,
-        "data": list(data.values())
-    }
-
+    app_logger.warn('TEST')
     report_name = "{}_{}.lnk".format(PROJECT_ID, project_info.name)
     local_path = os.path.join(my_app.data_dir, report_name)
     sly.fs.ensure_base_path(local_path)
@@ -351,7 +347,8 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
 
     fields = [
         {"field": "data.loading", "payload": False},
-        {"field": "data.userImageTable", "payload": json.loads(df_classes.to_json(orient="split"))},
+        {"field": "data.classesTable", "payload": json.loads(df_classes.to_json(orient="split"))},
+        {"field": "data.tagsTable", "payload": json.loads(df.to_json(orient="split"))},
         {"field": "data.savePath", "payload": remote_path},
         {"field": "data.reportName", "payload": report_name},
         {"field": "data.reportUrl", "payload": report_url},

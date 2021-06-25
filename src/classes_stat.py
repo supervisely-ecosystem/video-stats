@@ -332,8 +332,6 @@ def video_stats(api: sly.Api, task_id, context, state, app_logger):
         print('Total object tags values stats')
         print(df_object_values)
 
-
-    app_logger.warn('TEST')
     report_name = "{}_{}.lnk".format(PROJECT_ID, project_info.name)
     local_path = os.path.join(my_app.data_dir, report_name)
     sly.fs.ensure_base_path(local_path)
